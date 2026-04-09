@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '../lib/supabase';
+import { useProject } from '../contexts/ProjectContext';
 import type { AuditLogEntry } from '../lib/types';
 
 interface AuditFilters {
@@ -12,11 +13,19 @@ interface AuditFilters {
 export function useAuditLog(filters?: AuditFilters) {
   const [entries, setEntries] = useState<AuditLogEntry[]>([]);
   const [loading, setLoading] = useState(true);
+  const { projectId } = useProject();
 
   const fetchEntries = useCallback(async () => {
+    if (!projectId) {
+      setEntries([]);
+      setLoading(false);
+      return;
+    }
+
     let query = supabase
       .from('schema_audit_log')
       .select('*')
+      .eq('project_id', projectId)
       .order('created_at', { ascending: false });
 
     if (filters?.entityType) {
@@ -38,7 +47,7 @@ export function useAuditLog(filters?: AuditFilters) {
       setEntries(data as AuditLogEntry[]);
     }
     setLoading(false);
-  }, [filters?.entityType, filters?.entityId, filters?.action, filters?.limit]);
+  }, [projectId, filters?.entityType, filters?.entityId, filters?.action, filters?.limit]);
 
   useEffect(() => {
     setLoading(true);

@@ -1,12 +1,25 @@
+export interface Project {
+  id: string;
+  name: string;
+  slug: string;
+  description: string;
+  color: string;
+  icon: string;
+  source_catalog: Record<string, unknown> | null;
+  created_at: string;
+  updated_at: string;
+}
+
 export interface SchemaType {
   id: string;
+  project_id: string;
   type_key: string;
   display_name: string;
   description: string;
   json_schema: JsonSchema;
   parent_types: string[];
   sort_order: number;
-  source: 'initial' | 'proposal';
+  source: 'initial' | 'proposal' | 'catalog';
   source_proposal_id: string | null;
   created_at: string;
 }
@@ -31,6 +44,7 @@ export interface SchemaProperty {
 
 export interface Annotation {
   id: string;
+  project_id: string;
   schema_type_id: string;
   field_path: string | null;
   note: string;
@@ -42,6 +56,7 @@ export interface Annotation {
 
 export interface SampleEvent {
   id: string;
+  project_id: string;
   name: string;
   description: string | null;
   created_at: string;
@@ -50,6 +65,7 @@ export interface SampleEvent {
 
 export interface SampleComponent {
   id: string;
+  project_id: string;
   sample_event_id: string;
   schema_type_key: string;
   component_id: string;
@@ -60,6 +76,7 @@ export interface SampleComponent {
 
 export interface Metric {
   id: string;
+  project_id: string;
   schema_type_key: string;
   field_path: string;
   display_name: string;
@@ -72,6 +89,7 @@ export interface Metric {
 
 export interface KpiDefinition {
   id: string;
+  project_id: string;
   name: string;
   description: string | null;
   formula: string;
@@ -101,6 +119,7 @@ export interface FormulaNode {
 
 export interface DashboardLayout {
   id: string;
+  project_id: string;
   name: string;
   widgets: DashboardWidget[];
   created_at: string;
@@ -128,6 +147,7 @@ export type ChangeType = 'add_field' | 'modify_field' | 'remove_field' | 'add_re
 
 export interface SchemaVersion {
   id: string;
+  project_id: string;
   schema_type_id: string;
   version_number: number;
   json_schema: JsonSchema;
@@ -139,6 +159,7 @@ export interface SchemaVersion {
 
 export interface ChangeProposal {
   id: string;
+  project_id: string;
   schema_type_id: string;
   change_type: ChangeType;
   field_path: string | null;
@@ -165,6 +186,7 @@ export interface ProposalComment {
 
 export interface AuditLogEntry {
   id: string;
+  project_id: string;
   entity_type: string;
   entity_id: string;
   action: string;

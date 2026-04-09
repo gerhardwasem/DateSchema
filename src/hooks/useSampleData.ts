@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { supabase } from '../lib/supabase';
 import { useFilters } from '../contexts/FilterContext';
+import { useProject } from '../contexts/ProjectContext';
 import type { SampleEvent, SampleComponent } from '../lib/types';
 
 export interface EnrichedEvent extends SampleEvent {
@@ -28,17 +29,25 @@ export function useSampleData() {
   const [allComponents, setAllComponents] = useState<SampleComponent[]>([]);
   const [loading, setLoading] = useState(true);
   const filters = useFilters();
+  const { projectId } = useProject();
 
   const fetchAll = useCallback(async () => {
+    if (!projectId) {
+      setAllEvents([]);
+      setAllComponents([]);
+      setLoading(false);
+      return;
+    }
+
     setLoading(true);
     const [evtRes, compRes] = await Promise.all([
-      supabase.from('sample_events').select('*').order('created_at', { ascending: false }),
-      supabase.from('sample_components').select('*'),
+      supabase.from('sample_events').select('*').eq('project_id', projectId).order('created_at', { ascending: false }),
+      supabase.from('sample_components').select('*').eq('project_id', projectId),
     ]);
     if (evtRes.data) setAllEvents(evtRes.data as SampleEvent[]);
     if (compRes.data) setAllComponents(compRes.data as SampleComponent[]);
     setLoading(false);
-  }, []);
+  }, [projectId]);
 
   useEffect(() => {
     fetchAll();

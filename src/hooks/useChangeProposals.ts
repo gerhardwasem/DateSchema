@@ -1,24 +1,34 @@
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '../lib/supabase';
+import { useProject } from '../contexts/ProjectContext';
 import type { ChangeProposal, ChangeType } from '../lib/types';
 
 export function useChangeProposals() {
   const [proposals, setProposals] = useState<ChangeProposal[]>([]);
   const [loading, setLoading] = useState(true);
+  const { projectId } = useProject();
 
   const fetchProposals = useCallback(async () => {
+    if (!projectId) {
+      setProposals([]);
+      setLoading(false);
+      return;
+    }
+
     const { data, error } = await supabase
       .from('schema_change_proposals')
       .select('*')
+      .eq('project_id', projectId)
       .order('created_at', { ascending: false });
 
     if (!error && data) {
       setProposals(data as ChangeProposal[]);
     }
     setLoading(false);
-  }, []);
+  }, [projectId]);
 
   useEffect(() => {
+    setLoading(true);
     fetchProposals();
   }, [fetchProposals]);
 
@@ -28,34 +38,13 @@ export function useChangeProposals() {
     proposedValue: Record<string, unknown>,
     proposalId: string,
   ): Promise<boolean> => {
-    if (changeType === 'create_type') {
-      return await applyCreateType(proposedValue, proposalId);
-    }
-
-    if (changeType === 'add_field') {
-      return await applyAddField(schemaTypeId, proposedValue);
-    }
-
-    if (changeType === 'modify_field') {
-      return await applyModifyField(schemaTypeId, proposedValue);
-    }
-
-    if (changeType === 'remove_field') {
-      return await applyRemoveField(schemaTypeId, proposedValue);
-    }
-
-    if (changeType === 'add_relationship') {
-      return await applyAddRelationship(schemaTypeId, proposedValue);
-    }
-
-    if (changeType === 'remove_relationship') {
-      return await applyRemoveRelationship(schemaTypeId, proposedValue);
-    }
-
-    if (changeType === 'modify_type') {
-      return await applyModifyType(schemaTypeId, proposedValue);
-    }
-
+    if (changeType === 'create_type') return await applyCreateType(proposedValue, proposalId);
+    if (changeType === 'add_field') return await applyAddField(schemaTypeId, proposedValue);
+    if (changeType === 'modify_field') return await applyModifyField(schemaTypeId, proposedValue);
+    if (changeType === 'remove_field') return await applyRemoveField(schemaTypeId, proposedValue);
+    if (changeType === 'add_relationship') return await applyAddRelationship(schemaTypeId, proposedValue);
+    if (changeType === 'remove_relationship') return await applyRemoveRelationship(schemaTypeId, proposedValue);
+    if (changeType === 'modify_type') return await applyModifyType(schemaTypeId, proposedValue);
     return true;
   };
 
@@ -63,6 +52,8 @@ export function useChangeProposals() {
     proposedValue: Record<string, unknown>,
     proposalId: string,
   ): Promise<boolean> => {
+    if (!projectId) return false;
+
     const pv = proposedValue as {
       type_key: string;
       display_name: string;
@@ -74,6 +65,7 @@ export function useChangeProposals() {
     const { data: maxSort } = await supabase
       .from('schema_types')
       .select('sort_order')
+      .eq('project_id', projectId)
       .order('sort_order', { ascending: false })
       .limit(1)
       .maybeSingle();
@@ -81,6 +73,7 @@ export function useChangeProposals() {
     const nextSortOrder = ((maxSort?.sort_order as number) || 0) + 1;
 
     const { error } = await supabase.from('schema_types').insert({
+      project_id: projectId,
       type_key: pv.type_key,
       display_name: pv.display_name,
       description: pv.description || '',
@@ -259,7 +252,10 @@ export function useChangeProposals() {
     tags?: string[];
     actor: string;
   }) => {
+    if (!projectId) return false;
+
     const { data, error } = await supabase.from('schema_change_proposals').insert({
+      project_id: projectId,
       schema_type_id: proposal.schema_type_id,
       change_type: proposal.change_type,
       field_path: proposal.field_path || null,
